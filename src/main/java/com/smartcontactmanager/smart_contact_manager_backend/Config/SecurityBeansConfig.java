@@ -42,6 +42,7 @@ public class SecurityBeansConfig {
                 ))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/start-server",
                                 "/auth/createUser",
                                 "/auth/login",
                                 "/auth/verify-email",
