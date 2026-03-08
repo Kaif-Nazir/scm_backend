@@ -1,5 +1,110 @@
 # Smart Contact Manager Backend
 
+## ⚙️ Smart Contact Manager Backend
+
+### 🧩 Overview
+- ⚡ **Backend:** Spring Boot 4 + Java 21 + PostgreSQL  
+- 🔐 **Authentication:** JWT + Google OAuth2  
+- 🐳 **Deployment Ready:** Docker + Render  
+- 📧 **Email Provider:** Resend (HTTP API)
+
+---
+
+## 🚀 Core Capabilities
+
+### 👤 User Authentication & Account
+- ✉️ Register / Login with email & password  
+- 🔑 Google OAuth login  
+- 👤 Get and update user profile  
+- 🔒 Set or change password  
+- 🗑 Delete user account  
+
+---
+
+### 🛡 Verification & Recovery
+- 📧 Email verification token flow  
+- 🔢 Forgot password OTP system  
+- 🔁 Reset password via OTP  
+
+---
+
+### 📇 Contact Management
+- ➕ Create contacts  
+- 📋 List all contacts  
+- 🔎 Search contacts  
+- ✏️ Update contacts  
+- ❌ Delete contacts  
+- ⭐ Mark favourite contacts  
+- 📊 Contact statistics  
+- 🌐 Store social links and full contact details  
+
+---
+
+## 🔌 API Surface
+
+- 🌍 **Total REST Endpoints:** `21`
+
+### Controllers
+- 👤 **User Controller:** 11 endpoints  
+- 📇 **Contact Controller:** 9 endpoints  
+- ❤️ **Health / Startup Controller:** 1 endpoint  
+
+---
+
+## 🔐 Security
+
+- 🪪 JWT-based authorization (`sub = userId`)  
+- 🛡 Spring Security route protection  
+- 🔑 BCrypt password hashing  
+- 🔗 OAuth2 login success handler for frontend callback  
+- 🌐 CORS allowlist via configuration  
+
+---
+
+## ⚡ Performance Optimizations
+
+- 📌 Contact queries switched to **userId-based access**
+- 🚫 Removed redundant query after contact creation
+
+### Database Indexing
+- `users.email` → unique + indexed  
+- `contact.user_user_id`  
+- `contact(user_user_id, favourite)`  
+- `contact(user_user_id, name)`
+
+### Lazy Loading Enabled
+- `User.emailVerificationToken`  
+- `Contact.socialLinks`
+
+---
+
+## 🗄 Database & ORM
+
+- 🐘 PostgreSQL with JPA / Hibernate  
+- 🔐 Ownership-safe queries (`findByIdAndUserUserId`)  
+- ⚡ Reduced unnecessary joins and entity loading  
+
+---
+
+## 📧 Email Architecture
+
+- 🔄 Migrated from **Gmail SMTP → Resend API**
+- ⚡ Async email sending with failure logging  
+- 📩 One Resend API call per email sent  
+
+---
+
+## 🐳 DevOps & Deployment
+
+- 🐳 Dockerized backend  
+- ⚙️ Environment-driven configuration (`.env`, Render env vars)  
+- 🌐 Render-compatible mail strategy (HTTPS instead of SMTP ports)
+
+---
+
+## 🔑 Required Mail Environment Variables
+
+
 Spring Boot backend for Smart Contact Manager.
 
 ## Tech Stack
