@@ -1,67 +1,58 @@
 package com.smartcontactmanager.smart_contact_manager_backend.Service;
 
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
 
 @Service
 public class AsyncMailService {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncMailService.class);
 
-    private final JavaMailSender mailSender;
-    private final String mailFrom;
+    private final RestClient restClient;
+    private final String resendApiKey;
+    private final String fromEmail;
 
-    public AsyncMailService(JavaMailSender mailSender,
-                            @Value("${spring.mail.username:}") String mailFrom) {
-        this.mailSender = mailSender;
-        this.mailFrom = mailFrom;
+    public AsyncMailService(
+            @Value("${app.mail.resend.api-key:}") String resendApiKey,
+            @Value("${app.mail.from-email:onboarding@resend.dev}") String fromEmail
+    ) {
+        this.restClient = RestClient.create("https://api.resend.com");
+        this.resendApiKey = resendApiKey;
+        this.fromEmail = fromEmail;
     }
 
     @Async("mailTaskExecutor")
     public void sendPasswordResetOtp(String email, String otp) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-            if (mailFrom != null && !mailFrom.isBlank()) {
-                helper.setFrom(mailFrom);
-            }
-            helper.setTo(email);
-            helper.setSubject("[SCM] Password Reset OTP");
-            helper.setText(buildOtpHtml(otp), true);
-            mailSender.send(message);
-            log.info("Password reset OTP email queued to {}", email);
-        } catch (MessagingException ex) {
-            log.error("PASSWORD_RESET_EMAIL_BUILD_FAILED for {}", email, ex);
-        } catch (Exception ex) {
-            log.error("PASSWORD_RESET_EMAIL_SEND_FAILED for {}", email, ex);
-        }
+        sendMail(email, "[SCM] Password Reset OTP", buildOtpHtml(otp), "PASSWORD_RESET");
     }
 
     @Async("mailTaskExecutor")
     public void sendEmailVerificationToken(String email, String token) {
+        sendMail(email, "[SCM] Verify Your Email", buildVerificationTokenHtml(token), "EMAIL_VERIFICATION");
+    }
+
+    private void sendMail(String to, String subject, String html, String kind) {
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            log.error("{}_EMAIL_SEND_FAILED: RESEND_API_KEY missing", kind);
+            return;
+        }
+
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-            if (mailFrom != null && !mailFrom.isBlank()) {
-                helper.setFrom(mailFrom);
-            }
-            helper.setTo(email);
-            helper.setSubject("[SCM] Verify Your Email");
-            helper.setText(buildVerificationTokenHtml(token), true);
-            mailSender.send(message);
-            log.info("Email verification token email queued to {}", email);
-        } catch (MessagingException ex) {
-            log.error("EMAIL_VERIFICATION_BUILD_FAILED for {}", email, ex);
+            restClient.post()
+                    .uri("/emails")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .body(new ResendEmailRequest(fromEmail, to, subject, html))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("{} email sent to {}", kind, to);
         } catch (Exception ex) {
-            log.error("EMAIL_VERIFICATION_SEND_FAILED for {}", email, ex);
+            log.error("{}_EMAIL_SEND_FAILED for {}", kind, to, ex);
         }
     }
 
@@ -137,5 +128,13 @@ public class AsyncMailService {
                 </body>
                 </html>
                 """.formatted(boxes);
+    }
+
+    private record ResendEmailRequest(
+            String from,
+            String to,
+            String subject,
+            String html
+    ) {
     }
 }
