@@ -2,14 +2,18 @@ package com.smartcontactmanager.smart_contact_manager_backend.Models;
 
 import com.smartcontactmanager.smart_contact_manager_backend.Providers.LoginProviders;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_users_email", columnList = "email")
+        }
+)
 @Getter
 @Setter
 @AllArgsConstructor
@@ -21,6 +25,7 @@ import java.util.List;
         private String userId;
         @Column(nullable = false)
         private String name;
+        @Column(unique = true)
         private String email;
         private String password;
         @Column(length = 1000)
@@ -33,7 +38,7 @@ import java.util.List;
         private boolean emailVerified = false;
 
         // Log-In
-        @OneToOne(mappedBy = "user" , cascade = CascadeType.ALL , orphanRemoval = true)
+        @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
         private EmailVerificationToken emailVerificationToken;
         @Enumerated(EnumType.STRING)
         private LoginProviders provider = LoginProviders.SELF;

@@ -4,6 +4,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -11,10 +14,15 @@ import jakarta.mail.internet.MimeMessage;
 @Service
 public class AsyncMailService {
 
-    private final JavaMailSender mailSender;
+    private static final Logger log = LoggerFactory.getLogger(AsyncMailService.class);
 
-    public AsyncMailService(JavaMailSender mailSender) {
+    private final JavaMailSender mailSender;
+    private final String mailFrom;
+
+    public AsyncMailService(JavaMailSender mailSender,
+                            @Value("${spring.mail.username:}") String mailFrom) {
         this.mailSender = mailSender;
+        this.mailFrom = mailFrom;
     }
 
     @Async("mailTaskExecutor")
@@ -22,12 +30,18 @@ public class AsyncMailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            if (mailFrom != null && !mailFrom.isBlank()) {
+                helper.setFrom(mailFrom);
+            }
             helper.setTo(email);
             helper.setSubject("[SCM] Password Reset OTP");
             helper.setText(buildOtpHtml(otp), true);
             mailSender.send(message);
+            log.info("Password reset OTP email queued to {}", email);
         } catch (MessagingException ex) {
-            throw new RuntimeException("PASSWORD_RESET_EMAIL_BUILD_FAILED", ex);
+            log.error("PASSWORD_RESET_EMAIL_BUILD_FAILED for {}", email, ex);
+        } catch (Exception ex) {
+            log.error("PASSWORD_RESET_EMAIL_SEND_FAILED for {}", email, ex);
         }
     }
 
@@ -36,12 +50,18 @@ public class AsyncMailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            if (mailFrom != null && !mailFrom.isBlank()) {
+                helper.setFrom(mailFrom);
+            }
             helper.setTo(email);
             helper.setSubject("[SCM] Verify Your Email");
             helper.setText(buildVerificationTokenHtml(token), true);
             mailSender.send(message);
+            log.info("Email verification token email queued to {}", email);
         } catch (MessagingException ex) {
-            throw new RuntimeException("EMAIL_VERIFICATION_BUILD_FAILED", ex);
+            log.error("EMAIL_VERIFICATION_BUILD_FAILED for {}", email, ex);
+        } catch (Exception ex) {
+            log.error("EMAIL_VERIFICATION_SEND_FAILED for {}", email, ex);
         }
     }
 

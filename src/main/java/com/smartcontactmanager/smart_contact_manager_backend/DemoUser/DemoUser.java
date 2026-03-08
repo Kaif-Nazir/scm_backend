@@ -42,7 +42,7 @@ public class DemoUser implements CommandLineRunner {
             return userRepository.save(demoUser);
         });
 
-        if (contactRepository.countByUser(user) == 0) {
+        if (contactRepository.countByUserUserId(user.getUserId()) == 0) {
             List<Contact> contacts = List.of(
                     createContact(
                             user,

@@ -1,4 +1,4 @@
-package com.smartcontactmanager.smart_contact_manager_backend;
+package com.smartcontactmanager.smart_contact_manager_backend.Controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
